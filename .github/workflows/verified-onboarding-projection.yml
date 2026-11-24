@@ -15,6 +15,7 @@ on:
     paths:
       - 'modules/runtime-onboarding-projection.mjs'
       - 'tests/runtime-onboarding-projection.test.mjs'
+      - 'docs/device-bridge-registrations-crm-erp.md'
       - '.github/workflows/verified-onboarding-projection.yml'
   workflow_dispatch:
 permissions:
