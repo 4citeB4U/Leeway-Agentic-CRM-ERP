@@ -139,3 +139,27 @@ test('non-Creator cannot inspect entire business customer totals',async()=>{
 test('no CRM/ERP source mutation available without all original injected providers',()=>{
  assert.throws(()=>createRuntimeCustomerCrmProjection({}),/CANONICAL_PROVIDER_UNBOUND/);
 });
+
+test('stable business identity deduplicates different event references from the same customer',async()=>{
+ const eventRefs=['event:verified-onboard-000000000001','event:verified-onboard-000000000002'];
+ const keys=[], rows=new Map();
+ const p=createRuntimeCustomerCrmProjection({
+  verifyOriginalRuntimeEvent:async ({internalEventRef})=>verified({eventRef:internalEventRef}),
+  commitOriginalCrmErpTransaction:async ({internalEventRef,projection,idempotencyKey})=>{
+   keys.push(idempotencyKey);
+   rows.set(internalEventRef,{sourceDigest:projection.sourceDigest,
+    contactId:projection.contact.contactId,accountId:projection.account.accountId});
+   return {status:keys.length===1?'COMMITTED':'ALREADY_COMMITTED'};
+  },
+  readOriginalCrmErpProjection:async ({internalEventRef})=>rows.get(internalEventRef),
+  authorizeCreatorBusinessRead:async ()=>({verified:false}),
+  readOriginalCreatorMetrics:async ()=>({})
+ });
+ for(const internalEventRef of eventRefs){
+  const answer=await p.accept({internalEventRef});
+  assert.equal(answer.status,'VERIFIED_ONBOARDING_PROJECTED');
+ }
+ assert.equal(keys.length,2);
+ assert.equal(keys[0],keys[1]);
+ assert.match(keys[0],/^customer\.registration:creator-business-001:leeway-account-/);
+});
