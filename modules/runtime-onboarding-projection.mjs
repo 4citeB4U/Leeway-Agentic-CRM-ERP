@@ -104,7 +104,10 @@ export function createRuntimeCustomerCrmProjection({
    const projection=normalizeVerifiedSignup(verified);
    const result=await commitOriginalCrmErpTransaction({
     businessTenantRef:projection.businessTenantRef,
-    internalEventRef,projection,idempotencyKey:projection.sourceDigest
+    internalEventRef,projection,
+    // Unique CUSTOMER identity is the durable business count. Multiple browser
+    // sessions or retried event references cannot increment registrations.
+    idempotencyKey:'customer.registration:'+projection.businessTenantRef+':'+projection.account.accountId
    });
    if(result?.status!=='COMMITTED'&&result?.status!=='ALREADY_COMMITTED')
     deny('ATOMIC_CRM_ERP_COMMIT_NOT_VERIFIED');
