@@ -1,0 +1,36 @@
+# LEEWAY HEADER — DO NOT REMOVE
+# REGION: LEEWAY.CRM_ERP.CUSTOMER_ONBOARDING_CI
+# TAG: LEEWAY.CRM_ERP.VERIFIED_CUSTOMER_PROJECTION_SOURCE_CI.V1
+# 5WH:
+# WHAT = Test original Runtime-verified signup to CRM/ERP account projection and Creator metrics.
+# WHY = Never count browser opens or unverified emails as customers or send unconsented marketing.
+# WHO = Creator-authorized CRM/ERP source QA; not independent Veritas or production customer DB.
+# WHERE = .github/workflows/verified-onboarding-projection.yml.
+# WHEN = 2026-11-24.
+# HOW = Exact Node source tests with synthetic trusted provider callbacks; no credentials or actual customer records.
+# LICENSE = Existing repository terms.
+name: LeeWay CRM ERP Verified Onboarding Source Contract
+on:
+  pull_request:
+    paths:
+      - 'modules/runtime-onboarding-projection.mjs'
+      - 'tests/runtime-onboarding-projection.test.mjs'
+      - '.github/workflows/verified-onboarding-projection.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verified-projection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          node --check modules/runtime-onboarding-projection.mjs
+          node --check tests/runtime-onboarding-projection.test.mjs
+      - name: Original Runtime event, tenant isolation, marketing denial and readback tests
+        run: node --test tests/runtime-onboarding-projection.test.mjs
